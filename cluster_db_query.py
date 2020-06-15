@@ -1,3 +1,10 @@
+import sys
+import time
+import sqlite3
+import multiprocessing
+from secret import rpc_user, rpc_password
+from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
+
 db_path = '/home/dnlab/BitcoinBlockSampler/cluster.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
@@ -29,7 +36,7 @@ def get_meta(key):
     
 def create_cluster_table():
     cur.execute('''CREATE TABLE IF NOT EXISTS Cluster (
-                     address INTEGER PRIMARY KEY,
+                     address TEXT PRIMARY KEY,
                      number INTEGER NOT NULL);
                 ''')
     
@@ -43,7 +50,7 @@ def insert_cluster(address, number):
     
 def insert_cluster_many(addr_list):
     #print(addr_list)
-    cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES(?, ?)''',addr_list)
+    cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES (?, ?)''',addr_list)
     
     
 def begin_transactions():
@@ -81,3 +88,19 @@ def get_all_cluster():
         return addr_dict
     except Exception as e:
         return None
+
+    
+def update_cluster(addrs, cluster_num):
+    #try:
+        print(type(addrs[0]))
+        cluster_nums = [cluster_num] * len(addrs)
+        cluster_list = list(zip(addrs, cluster_nums))
+        print(cluster_list)
+        
+        ####begintransaction######                 
+        insert_cluster_many(cluster_list)
+        ####end commit ###########
+    #    return True
+    #except Exception as e:
+     #   print(e)
+      #  return False
