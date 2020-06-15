@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import sqlite3
@@ -23,9 +24,14 @@ def get_rpc():
 
 
 def get_data(height):
-    rpc_connection = get_rpc()
-    block_hash = rpc_connection.getblockhash(height)
-    txes = rpc_connection.getblock(block_hash)['tx']
+    try:
+        rpc_connection = get_rpc()
+        block_hash = rpc_connection.getblockhash(height)
+        txes = rpc_connection.getblock(block_hash)['tx']
+    except OSError as e:
+        print("HEIGHT:", height, e)
+        return None
+    
     for tx in txes:
         tx_indexes = dq.get_txid(tx)
         in_addrs = dq.get_addr_txin(tx_indexes)
@@ -43,6 +49,12 @@ def get_data(height):
     
     
 def main():
+    cdq.create_cluster_table()
+    cdq.create_meta_table()
+    print("CLSUTER TABLE MADE")
+    time.sleep(20)
+    
+    
     stime = time.time()
     for sheight, eheight in zip(range(start_height, end_height, term), \
                                        range(start_height+term, end_height+term,term)):
@@ -54,11 +66,11 @@ def main():
             for addr_list in result:
                 if addr_list == None:
                     continue
-                cdq.update_cluster(addr_list, -1)
+                cdq.insert_cluster_many(addr_list)
         cdq.commit_transactions()
         etime = time.time()
         print('height: {}, time:{}'.format(eheight, etime-stime))
-                
-               
+
+            
 if __name__=="__main__":
     main()
