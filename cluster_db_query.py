@@ -89,7 +89,7 @@ def get_all_cluster():
     except Exception as e:
         return None
 
-    
+
 def update_cluster(addrs, cluster_num):
     #try:
         print(type(addrs[0]))

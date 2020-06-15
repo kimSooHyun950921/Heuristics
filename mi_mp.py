@@ -13,24 +13,13 @@ rpc_ip = '127.0.0.1'
 rpc_port = '8332'
 timeout = 300
 
-term = 1000
-start_height = 0
-end_height = 400000
-pool_num = multiprocessing.cpu_count()//2
-
-
 def get_rpc():
     return AuthServiceProxy(f'http://{rpc_user}:{rpc_password}@{rpc_ip}:{rpc_port}', timeout=timeout)
 
 
-def get_data(height):
-    try:
-        rpc_connection = get_rpc()
-        block_hash = rpc_connection.getblockhash(height)
-        txes = rpc_connection.getblock(block_hash)['tx']
-    except OSError as e:
-        print("HEIGHT:", height, e)
-        return None
+def get_data(start):
+    addrs = dq.get_addr_many(start, start + 1000)
+    return addrs
     
     for tx in txes:
         tx_indexes = dq.get_txid(tx)
@@ -49,15 +38,19 @@ def get_data(height):
     
     
 def main():
+    term = 1000
+    start_height = 0
+    end_height = dq.get_max()
+    pool_num = multiprocessing.cpu_count()//2
+
     cdq.create_cluster_table()
     cdq.create_meta_table()
     print("CLSUTER TABLE MADE")
-    time.sleep(20)
-    
+    time.sleep(5)
     
     stime = time.time()
     for sheight, eheight in zip(range(start_height, end_height, term), \
-                                       range(start_height+term, end_height+term,term)):
+                                               range(start_height+term, end_height+term,term)):
         cdq.begin_transactions()
         if eheight >= end_height:
             eheight = end_height + 1
