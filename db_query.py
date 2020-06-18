@@ -1,8 +1,8 @@
 #DB Query
 import sqlite3
 
-db_index = '/home/dnlab/BitcoinBlockSampler/index.db'
-db_txhash = '/media/dnlab/0602da39-763c-42b0-b186-f929ac6b3f66/200529/txhash.db'
+db_index = ''
+db_txhash =''
 index_conn = sqlite3.connect(db_index)
 txhash_conn = sqlite3.connect(db_txhash)
 icur = index_conn.cursor()
