@@ -48,7 +48,7 @@ def get_min_cluster_num(addr, flag=0):
     
 def get_cluster_num(addrs):
     cls_num = -1
-    max_cluster_num  = cdq.get_meta('max_num')
+    max_cluster_num  = cdq.get_
     cls_num_set = set(cdq.get_cluster_number(addrs))
     #all same cluster
     if len(cls_num_set) == 1:
@@ -56,11 +56,7 @@ def get_cluster_num(addrs):
         if cls_num == -1:
             cls_num = max_cluster_num + 1
             max_cluster_num = cls_num
-            #####################
-            cdq.begin_transactions()
-            cdq.update_meta_table('max_num', max_cluster_num)
-            cdq.commit_transactions()
-            #######################
+;
 
     else:
         cls_num = cdq.get_min_clustered(addrs)
@@ -92,63 +88,76 @@ def is_mi_cond(in_addrs, out_addrs):
     return True
 
 
+def rpc_command(height):
+    while True:
+        try:
+            rpc_connection = get_rpc()
+            block_hash = rpc_connection.getblockhash(height)
+            txes = rpc_connection.getblock(block_hash)['tx']
+            break
+        except OSError as e:
+            print("Cannot assign requested address!")
+            time.sleep(3)
+    return txes
+
+
 def multi_input(height):
-    rpc_connection = get_rpc()
-    block_hash = rpc_connection.getblockhash(height)
-    txes = rpc_connection.getblock(block_hash)['tx']    
+    cluster_dict = dict()
+    txes = rpc_command(height)
     for tx in txes:
         tx_indexes = dq.get_txid(tx)
         in_addrs = dq.get_addr_txin(tx_indexes)
         out_addrs = dq.get_addr_txout(tx_indexes)
         
         if is_mi_cond(in_addrs, out_addrs):
-            print("IN",in_addrs, "OUT", out_addrs)
-    
             cluster_num = get_cluster_num(in_addrs)
-            print("CLUSTER NUM", cluster_num)
-            return in_addrs, cluster_num
-    return None, None 
+            
+            ##### update cluster dict #################
+            for addr in in_addrs:
+                if cluster_dict.get(addr) == None:
+                    cluster_dict[addr] = cluster_dict.get(addr, cluster_num)
+                else:
+                    if cluster_dict.get(addr) > cluster_num:
+                        cluster_dict[addr] = cluster_num
+            ############################################       
+                
+            
+    return cluster_dict
     
     
 def main():
     term = 1000
     start_height = 0
     end_height = dq.get_max()
-    pool_num = multiprocessing.cpu_count()//2
-    
-    ####begintransaction######
-    #cdq.begin_transactions()
-    #cdq.update_meta_table('max_num', -1)
-    #cdq.commit_transactions()
-    ####end commit ###########    
+    pool_num = multiprocessing.cpu_count()//2  
     
     print("CLSUTER TABLE MADE")
     time.sleep(5)
     stime = time.time()
     for sheight, eheight in zip(range(start_height, end_height, term), \
                                 range(start_height+term, end_height+term,term)):
+        addr_dict = dict()
         
         if eheight >= end_height:
             eheight = end_height + 1
         with multiprocessing.Pool(pool_num) as p:
+            ####begintransaction######
             cdq.begin_transactions()
             result = p.imap(multi_input, range(sheight, eheight))
-            for elem in result:
-                print("ELEM:",elem)
-                if elem == None:
-                    continue
-                if type(elem) == list:
-                    addr_list = elem
-                if type(elem) == int:
-                    cluster_num = elem
-            try:
-                print(addr_list, cluster_num)
-                #update_cluster(addr_list, cluster_num)
-            except UnboundLocalError as e:
-                print(e)
+            for cluster_dict in result:
+                #TODO: add Control Cluster num  
+                for addr in cluster_dict.keys():
+                    if addr_dict.get(addr) == None:
+                        addr_dict[addr] = addr_dict(addr, cluster_dict[key])
+                    else:
+                        if addr_dict.get(addr) > cluster_dict[key]:
+                            addr_dict[addr] = cluster_dict[key]
+                          
+            cdq.insert_cluster_many(list(addr_dict.items()))
+                   
             cdq.commit_transactions()
-                
-        #cdq.commit_transactions()
+            ####end commit ###########    
+
         etime = time.time()
         print('height: {}, time:{}'.format(eheight, etime-stime))
 

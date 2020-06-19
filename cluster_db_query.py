@@ -5,18 +5,11 @@ import multiprocessing
 from secret import rpc_user, rpc_password
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-db_path = '/media/dnlab/0602da39-763c-42b0-b186-f929ac6b3f66/200616cluster.db'
+db_path = '/home/dnlabblocksci/KimSooHyunFolder/cluster_db/cluster_TEST.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-
-def create_meta_table():
-    cur.execute('''CREATE TABLE IF NOT EXISTS Meta (
-                     key TEXT PRIMARY KEY,
-                     value INTEGER);
-                ''')
-    
-    
+        
 def update_meta_table(key, value):
     cur.execute('''INSERT OR IGNORE INTO Meta (
                         key, value) VALUES (
@@ -25,7 +18,6 @@ def update_meta_table(key, value):
     cur.execute('''UPDATE Meta SET value = ? WHERE key = ?;
                 ''', (value, key))
     
-
 def get_meta(key):
     cur.execute('''SELECT value FROM Meta WHERE key = ?''', (key,))
     result = cur.fetchone()
@@ -68,6 +60,11 @@ def get_min_all_cluster(addrss):
 
 def get_min_clustered(addrss):
     cur.execute(f'''SELECT MIN(number) FROM Cluster WHERE address IN ('{",".join(addrss)}') and number > -1'''.replace('\'',''))
+    return cur.fetchone()[0]
+
+
+def get_max_clustered(addrss):
+    cur.execute(f'''SELECT MAX(number) FROM Cluster''')
     return cur.fetchone()[0]
 
 

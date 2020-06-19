@@ -1,8 +1,8 @@
 #DB Query
 import sqlite3
 
-db_index = '/media/dnlab/0602da39-763c-42b0-b186-f929ac6b3f66/index_620000.db'
-db_txhash = '/media/dnlab/0602da39-763c-42b0-b186-f929ac6b3f66/index_620000.db'
+db_index = '/home/dnlabblocksci/BitcoinAnalysis/feature_machine_learning_test/bitcoin_db/index_620000.db'
+db_txhash = '/home/dnlabblocksci/BitcoinAnalysis/feature_machine_learning_test/bitcoin_db/index_620000.db'
 index_conn = sqlite3.connect(db_index)
 #txhash_conn = sqlite3.connect(db_txhash)
 tcur = index_conn.cursor()
