@@ -58,7 +58,7 @@ def get_cluster_num(addrs):
             max_cluster_num = cls_num
             #####################
             #cdq.begin_transactions()
-            #cdq.update_meta_table('max_num', max_cluster_num)
+            cdq.update_meta_table('max_num', max_cluster_num)
             #cdq.commit_transactions()
             #######################
 
@@ -111,39 +111,40 @@ def multi_input(height):
         out_addrs = dq.get_addr_txout(tx_indexes)
         
         if is_mi_cond(in_addrs, out_addrs):
-            print("IN",in_addrs, "OUT", out_addrs)
-    
-            cluster_num = get_cluster_num(in_addrs)
-            print("CLUSTER NUM", cluster_num)
-            return in_addrs, cluster_num
-    return None, None 
-    
+                cluster_num = get_cluster_num(in_addrs)
+                try:
+                    cdq.begin_transactions()
+                except Exception as e:
+                    cdq.commit_transactions()
+                    cdq.begin_transactions()
+                    
+                update_cluster(in_addrs, cluster_num)
+                
+                try:
+                    cdq.commit_transactions()
+                except Exception as e:
+                    print(e)
+
     
 def main():
     term = 1000
     start_height = 0
     end_height = dq.get_max()
-    pool_num = multiprocessing.cpu_count()//2
     
     ####begintransaction######
     #cdq.begin_transactions()
-    #cdq.update_meta_table('max_num', -1)
-    #cdq.commit_transactions()
+    cdq.update_meta_table('max_num', -1)
+    cdq.commit_transactions()
     ####end commit ###########    
     
     print("CLSUTER TABLE MADE")
     time.sleep(5)
     stime = time.time()
     for height in range(0, end_height):
-        #cdq.begin_transactions()
-        in_addrs, cluster_num = multi_input(height)
-        try:
-            print(in_addrs, cluster_num)
-        except UnboundLocalError as e:
-            print(e)
-        #cdq.commit_transactions()
+        multi_input(height)
         etime = time.time()
-        print('height: {}, time:{}'.format(height, etime-stime))
+        if height % 1000 == 0:
+            print('height: {}, time:{}'.format(height, etime-stime))
 
             
 if __name__=="__main__":
