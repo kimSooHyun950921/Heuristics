@@ -5,7 +5,7 @@ import multiprocessing
 from secret import rpc_user, rpc_password
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-db_path = '/home/dnlab/BitcoinBlockSampler/cluster.db'
+db_path = '/media/dnlab/0602da39-763c-42b0-b186-f929ac6b3f66/200616cluster.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
@@ -72,12 +72,15 @@ def get_min_clustered(addrss):
 
 
 def get_cluster_number(addrss):
-    cur.execute(f'''SELECT number FROM Cluster WHERE address IN ('{",".join(addrss)}')'''.replace('\'',''))
-    cls_num = []
-    for addr_tuple in cur.fetchall():
-        cls_num.append(addr_tuple[0])
-    return set(cls_num)
-
+    try:
+        cur.execute(f'''SELECT number FROM Cluster WHERE address IN ('{",".join(addrss)}')'''.replace('\'',''))
+        cls_num = []
+        for addr_tuple in cur.fetchall():
+            cls_num.append(addr_tuple[0])
+        return set(cls_num)
+    except sqlite3.DatabaseError as e:
+        print("[ERROR]: get_cluster_number", addrss, e)
+        
 
 def get_all_cluster():
     try:
@@ -89,18 +92,3 @@ def get_all_cluster():
     except Exception as e:
         return None
 
-
-def update_cluster(addrs, cluster_num):
-    #try:
-        print(type(addrs[0]))
-        cluster_nums = [cluster_num] * len(addrs)
-        cluster_list = list(zip(addrs, cluster_nums))
-        print(cluster_list)
-        
-        ####begintransaction######                 
-        insert_cluster_many(cluster_list)
-        ####end commit ###########
-    #    return True
-    #except Exception as e:
-     #   print(e)
-      #  return False
