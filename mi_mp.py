@@ -46,21 +46,18 @@ def get_min_cluster_num(addr, flag=0):
                 return num
             
     
-def get_cluster_num(addrs):
+def get_cluster_num(addrs, max_cluster_num):
     cls_num = -1
-    max_cluster_num  = cdq.get_
     cls_num_set = set(cdq.get_cluster_number(addrs))
     #all same cluster
     if len(cls_num_set) == 1:
         cls_num = cls_num_set.pop()
         if cls_num == -1:
             cls_num = max_cluster_num + 1
-            max_cluster_num = cls_num
-;
-
+            max_cluster_num = cls_num 
     else:
         cls_num = cdq.get_min_clustered(addrs)
-    return cls_num
+    return cls_num, max_cluster_num
 
 
 def update_cluster(addrs, cluster_num):
@@ -104,21 +101,24 @@ def rpc_command(height):
 def multi_input(height):
     cluster_dict = dict()
     txes = rpc_command(height)
+    max_cluster_num = 0 
     for tx in txes:
         tx_indexes = dq.get_txid(tx)
         in_addrs = dq.get_addr_txin(tx_indexes)
         out_addrs = dq.get_addr_txout(tx_indexes)
         
         if is_mi_cond(in_addrs, out_addrs):
-            cluster_num = get_cluster_num(in_addrs)
-            
+            cluster_num, max_cluster_num = \
+            get_cluster_num(in_addrs, max_cluster_num)
+            #TODO CHANGE {Cluster_num:{addrset}}
             ##### update cluster dict #################
-            for addr in in_addrs:
-                if cluster_dict.get(addr) == None:
-                    cluster_dict[addr] = cluster_dict.get(addr, cluster_num)
-                else:
-                    if cluster_dict.get(addr) > cluster_num:
-                        cluster_dict[addr] = cluster_num
+            for key in cluster_dict.keys():
+                if cluster_dict.get(cluster_num) == None:
+                        cluster_dict[cluster_num] = \
+                        cluster_dict.get(cluster_num, set()).union(in_addrs)
+                    else:
+                        if cluster_dict.get(addr) > cluster_num:
+                            cluster_dict[addr] = cluster_num
             ############################################       
                 
             
@@ -137,7 +137,7 @@ def main():
     for sheight, eheight in zip(range(start_height, end_height, term), \
                                 range(start_height+term, end_height+term,term)):
         addr_dict = dict()
-        
+        max_cluster_num = 0
         if eheight >= end_height:
             eheight = end_height + 1
         with multiprocessing.Pool(pool_num) as p:
@@ -145,13 +145,17 @@ def main():
             cdq.begin_transactions()
             result = p.imap(multi_input, range(sheight, eheight))
             for cluster_dict in result:
-                #TODO: add Control Cluster num  
-                for addr in cluster_dict.keys():
-                    if addr_dict.get(addr) == None:
-                        addr_dict[addr] = addr_dict(addr, cluster_dict[key])
-                    else:
-                        if addr_dict.get(addr) > cluster_dict[key]:
-                            addr_dict[addr] = cluster_dict[key]
+                cluster_set = set(cluster_dict.keys())
+                for i in cluster_dict.keys():
+                    for j in addr_dict.keys():
+                        if len(addr_dict[j] & cluster_dict[i]) > 0:
+                            addr_dict[j] = addr_dict[j].union(cluster_dict[i])
+                            cluster_set = cluster_set - {i}
+            for i in list(cluster_set):
+                addr_dict[max_cluster_num] = \
+                addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
+                max_cluster_num += 1
+                            
                           
             cdq.insert_cluster_many(list(addr_dict.items()))
                    
