@@ -108,17 +108,26 @@ def multi_input(height):
         out_addrs = dq.get_addr_txout(tx_indexes)
         
         if is_mi_cond(in_addrs, out_addrs):
+            #TODO Change How to related with DB get_clster_number
             cluster_num, max_cluster_num = \
             get_cluster_num(in_addrs, max_cluster_num)
-            #TODO CHANGE {Cluster_num:{addrset}}
             ##### update cluster dict #################
-            for key in cluster_dict.keys():
-                if cluster_dict.get(cluster_num) == None:
-                        cluster_dict[cluster_num] = \
-                        cluster_dict.get(cluster_num, set()).union(in_addrs)
-                    else:
-                        if cluster_dict.get(addr) > cluster_num:
-                            cluster_dict[addr] = cluster_num
+            '''
+            1. cluster_dict의 key와 item을 돌면서
+            2. 현재 만들어진 address_set과 교집합이 있는가? 판단
+            3. 교집합이 있다면 그 집합에 넣을것
+            4. 교집합이 없다면 cluster 번호를 새로 만들것
+            '''
+            need_new_cls_num = True
+            for key, addr_set in cluster_dict.items():
+                if len(addr_set & in_addr) != 0:
+                    clusetr_dict[key].union(in_addr)
+                    need_new_cls_num = False
+                    break
+            if need_new_cls_num:
+                cls_num_set = list(cluster_dict.keys()).sort()
+                cls_num = set(cls_num_set).pop()
+                cluster_dict.update({cls_num:in_addr})
             ############################################       
                 
             
