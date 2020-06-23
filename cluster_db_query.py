@@ -27,7 +27,16 @@ def insert_cluster_many(addr_list):
     
     
 def update_cluster_many(addr_list):
-    cur.executemany('''UPDATE OR IGNORE INTO Cluster VALUES (?, ?)''', addr_list)
+    index = 0
+    try:
+        while index < len(addr_list):
+            sample_list = addr_list[index: index+10000]
+            cur.executemany('''UPDATE Cluster SET number = ? WHERE address = ?''', addr_list)
+            index += 10000
+        return True
+    except sqlite3.Error as error:
+        print(error)
+        return False
     
 
 def find_addr_from_cluster_num(num):
