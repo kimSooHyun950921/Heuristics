@@ -5,7 +5,7 @@ import multiprocessing
 from secret import rpc_user, rpc_password
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-db_path = '/home/dnlabblocksci/KimSooHyunFolder/cluster_db/cluster_TEST.db'
+db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_TEST.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
@@ -28,7 +28,7 @@ def get_meta(key):
     
 def create_cluster_table():
     cur.execute('''CREATE TABLE IF NOT EXISTS Cluster (
-                     address TEXT PRIMARY KEY,
+                     address INTEGER PRIMARY KEY,
                      number INTEGER NOT NULL);
                 ''')
     
@@ -63,7 +63,7 @@ def get_min_clustered(addrss):
     return cur.fetchone()[0]
 
 
-def get_max_clustered(addrss):
+def get_max_clustered():
     cur.execute(f'''SELECT MAX(number) FROM Cluster''')
     return cur.fetchone()[0]
 
