@@ -97,7 +97,7 @@ def add_db(c_dict):
     print("add db")
     for _, addrs in c_dict.items():
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
-        if len(cluster_num_list) == 1:
+        if len(cluster_num_list) == 1 and cluster_num_list[0] == -1:
             cluster_num = cdq.get_max_clustered() + 1
             execute_list = list(zip(addrs, [cluster_num]*len(addrs)))
             cdq.update_cluster_many(execute_list)

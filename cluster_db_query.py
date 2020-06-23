@@ -32,7 +32,7 @@ def update_cluster_many(addr_list):
         while index < len(addr_list):
             sample_list = addr_list[index: index+10000]
             cur.executemany('''UPDATE Cluster SET number = ? WHERE address = ?
-                            ''', addr_list)
+                            ''', sample_list)
             index += 10000
         return True
     except sqlite3.Error as error:
