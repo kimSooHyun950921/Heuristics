@@ -94,11 +94,11 @@ def add_db(c_dict):
          - -1이 아닌 최소값으로 설정
      3. 클러스터번호에 설정하는 주소가 있다
     '''
+    print("add db")
     for _, addrs in c_dict.items():
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
-        if len(cluster_num_set) == 1:
+        if len(cluster_num_list) == 1:
             cluster_num = cdq.get_max_clustered() + 1
-            #TODO Make updste table execute many
             execute_list = list(zip(addrs, [cluster_num]*len(addrs)))
             cdq.update_cluster_many(execute_list)
         else:
@@ -112,8 +112,9 @@ def add_db(c_dict):
                     addr = cdq.find_addr_from_cluster_num(num)
                 else:
                     addr = addrs
-                execute_list = list(zip(addrs, [cluster_num]*len(addr)))
+                execute_list = list(zip(addr, [cluster_num]*len(addr)))
                 cdq.update_cluster_many(execute_list)
+    print("complete add db")
             
              
 def rpc_command(height):
@@ -148,22 +149,23 @@ def multi_input(height):
             '''
             need_new_cls_num = True
             for key, addr_set in cluster_dict.items():
-                if len(addr_set & in_addr) != 0:
-                    clusetr_dict[key].union(in_addr)
+                if len(addr_set & in_addrs) != 0:
+                    cluster_dict[key].union(in_addrs)
                     need_new_cls_num = False
                     break
             if need_new_cls_num:
-                cls_num_set = list(cluster_dict.keys()).sort()
-                cls_num = set(cls_num_set).pop()
-                cluster_dict.update({cls_num:in_addr})
+                if len(cluster_dict.keys()) == 0:
+                    cls_num = 0
+                else:
+                    cls_num_set = sorted(list(cluster_dict.keys()))
+                    cls_num = set(cls_num_set).pop() + 1
+                cluster_dict.update({cls_num:in_addrs})
             ############################################ 
-
-                
     return cluster_dict
     
     
 def main():
-    term = 1000
+    term = 2000
     start_height = 0
     end_height = dq.get_max()
     pool_num = multiprocessing.cpu_count()//2  
@@ -175,15 +177,12 @@ def main():
                                 range(start_height+term, end_height+term,term)):
         addr_dict = dict()
         max_cluster_num = 0
+        ####begintransaction######
+        cdq.begin_transactions()
         if eheight >= end_height:
             eheight = end_height + 1
         with multiprocessing.Pool(pool_num) as p:
-            ####begintransaction######
-            cdq.begin_transactions()
-            ####map###################
             result = p.imap(multi_input, range(sheight, eheight))
-            
-            ####reduce################
             for cluster_dict in result:
                 cluster_set = set(cluster_dict.keys())
                 for i in cluster_dict.keys():
@@ -195,11 +194,9 @@ def main():
                 addr_dict[max_cluster_num] = \
                 addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
                 max_cluster_num += 1
-                            
-            add_db(addr_dict)                                 
-            cdq.commit_transactions()
-            ####end commit ###########    
-
+        add_db(addr_dict)                                 
+        cdq.commit_transactions()
+        ####end commit ###########    
         etime = time.time()
         print('height: {}, time:{}'.format(eheight, etime-stime))
 
