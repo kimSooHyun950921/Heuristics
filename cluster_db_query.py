@@ -9,39 +9,20 @@ db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_TEST.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-        
-def update_meta_table(key, value):
-    cur.execute('''INSERT OR IGNORE INTO Meta (
-                        key, value) VALUES (
-                        ?, ?);
-                ''', (key, value))
-    cur.execute('''UPDATE Meta SET value = ? WHERE key = ?;
-                ''', (value, key))
-    
-def get_meta(key):
-    cur.execute('''SELECT value FROM Meta WHERE key = ?''', (key,))
-    result = cur.fetchone()
-    if result is not None:
-        result = result[0]
-    return result
-    
-    
+         
 def create_cluster_table():
     cur.execute('''CREATE TABLE IF NOT EXISTS Cluster (
                      address INTEGER PRIMARY KEY,
-                     number INTEGER NOT NULL);
-                ''')
+                     number INTEGER NOT NULL);''')
     
     
 def insert_cluster(address, number):
     cur.execute('''INSERT OR IGNORE INTO Cluster (
-                       address, number) VALUES (
-                       ?, ?);
-                    ''', (address, number))
+                       address, number) VALUES (?, ?);
+                ''', (address, number))
 
     
 def insert_cluster_many(addr_list):
-    #print(addr_list)
     cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES (?, ?)''',addr_list)
     
     
