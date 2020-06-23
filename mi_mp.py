@@ -85,6 +85,37 @@ def is_mi_cond(in_addrs, out_addrs):
     return True
 
 
+def add_db(c_dict):
+    '''
+     1. db에서 주소에 해당하는 값이 모두 동일하다면
+         - 클러스터 번호설정 ==> 그대로 냅두면 되는듯
+         - 클러스터 번호가 -1 이라면 max값 설정
+     2. db에 해당하는 주소가 동일하지 않다면
+         - -1이 아닌 최소값으로 설정
+     3. 클러스터번호에 설정하는 주소가 있다
+    '''
+    for _, addrs in c_dict.items():
+        cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
+        if len(cluster_num_set) == 1:
+            cluster_num = cdq.get_max_clustered() + 1
+            #TODO Make updste table execute many
+            execute_list = list(zip(addrs, [cluster_num]*len(addrs)))
+            cdq.update_cluster_many(execute_list)
+        else:
+            cluster_num = -1
+            for num in cluster_num_list:
+                if num != -1:
+                    cluster_num = num
+                    break
+            for num in cluster_num_list:
+                if num != cluster_num:
+                    addr = cdq.find_addr_from_cluster_num(num)
+                else:
+                    addr = addrs
+                execute_list = list(zip(addrs, [cluster_num]*len(addr)))
+                cdq.update_cluster_many(execute_list)
+            
+             
 def rpc_command(height):
     while True:
         try:
@@ -108,9 +139,6 @@ def multi_input(height):
         out_addrs = dq.get_addr_txout(tx_indexes)
         
         if is_mi_cond(in_addrs, out_addrs):
-            #TODO Change How to related with DB get_clster_number
-            cluster_num, max_cluster_num = \
-            get_cluster_num(in_addrs, max_cluster_num)
             ##### update cluster dict #################
             '''
             1. cluster_dict의 key와 item을 돌면서
@@ -128,9 +156,9 @@ def multi_input(height):
                 cls_num_set = list(cluster_dict.keys()).sort()
                 cls_num = set(cls_num_set).pop()
                 cluster_dict.update({cls_num:in_addr})
-            ############################################       
+            ############################################ 
+
                 
-            
     return cluster_dict
     
     
@@ -152,7 +180,10 @@ def main():
         with multiprocessing.Pool(pool_num) as p:
             ####begintransaction######
             cdq.begin_transactions()
+            ####map###################
             result = p.imap(multi_input, range(sheight, eheight))
+            
+            ####reduce################
             for cluster_dict in result:
                 cluster_set = set(cluster_dict.keys())
                 for i in cluster_dict.keys():
@@ -165,9 +196,7 @@ def main():
                 addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
                 max_cluster_num += 1
                             
-                          
-            cdq.insert_cluster_many(list(addr_dict.items()))
-                   
+            add_db(addr_dict)                                 
             cdq.commit_transactions()
             ####end commit ###########    
 

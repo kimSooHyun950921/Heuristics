@@ -21,9 +21,21 @@ def insert_cluster(address, number):
                        address, number) VALUES (?, ?);
                 ''', (address, number))
 
-    
+
 def insert_cluster_many(addr_list):
-    cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES (?, ?)''',addr_list)
+    cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES (?, ?)''', addr_list)
+    
+    
+def update_cluster_many(addr_list):
+    cur.executemany('''UPDATE OR IGNORE INTO Cluster VALUES (?, ?)''', addr_list)
+    
+
+def find_addr_from_cluster_num(num):
+    '''클러스터 번호가 num인 모든 주소를 가져옴
+       '''
+    cur.execute('''SELECT address FROM Cluster WHERE number = {}'''.format(num))
+    addr_list = [addr[0] for addr in cur.fetchall()]
+    return addr_list
     
     
 def begin_transactions():
