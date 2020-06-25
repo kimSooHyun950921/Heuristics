@@ -94,7 +94,6 @@ def add_db(c_dict):
          - -1이 아닌 최소값으로 설정
      3. 클러스터번호에 설정하는 주소가 있다
     '''
-    print("add db")
     for _, addrs in c_dict.items():
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
         if len(cluster_num_list) == 1 and cluster_num_list[0] == -1:
@@ -114,7 +113,6 @@ def add_db(c_dict):
                     addr = addrs
                 execute_list = list(zip(addr, [cluster_num]*len(addr)))
                 cdq.update_cluster_many(execute_list)
-    print("complete add db")
             
              
 def rpc_command(height):
@@ -165,40 +163,49 @@ def multi_input(height):
     
     
 def main():
-    term = 2000
+    term = 10000
     start_height = 0
-    end_height = dq.get_max()
+    end_height = dq.get_max() - 1
     pool_num = multiprocessing.cpu_count()//2  
     
     print("CLSUTER TABLE MADE")
     time.sleep(5)
     stime = time.time()
-    for sheight, eheight in zip(range(start_height, end_height, term), \
-                                range(start_height+term, end_height+term,term)):
-        addr_dict = dict()
-        max_cluster_num = 0
-        ####begintransaction######
-        cdq.begin_transactions()
-        if eheight >= end_height:
-            eheight = end_height + 1
-        with multiprocessing.Pool(pool_num) as p:
-            result = p.imap(multi_input, range(sheight, eheight))
-            for cluster_dict in result:
-                cluster_set = set(cluster_dict.keys())
-                for i in cluster_dict.keys():
-                    for j in addr_dict.keys():
-                        if len(addr_dict[j] & cluster_dict[i]) > 0:
-                            addr_dict[j] = addr_dict[j].union(cluster_dict[i])
-                            cluster_set = cluster_set - {i}
-            for i in list(cluster_set):
-                addr_dict[max_cluster_num] = \
-                addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
-                max_cluster_num += 1
-        add_db(addr_dict)                                 
-        cdq.commit_transactions()
-        ####end commit ###########    
-        etime = time.time()
-        print('height: {}, time:{}'.format(eheight, etime-stime))
+    try:
+        for sheight, eheight in zip(range(start_height, end_height, term), \
+                                    range(start_height+term, end_height+term, term)):
+            addr_dict = dict()
+            max_cluster_num = 0
+            cdq.begin_transactions()
+
+            if eheight >= end_height:
+                eheight = end_height + 1
+
+            with multiprocessing.Pool(pool_num) as p:
+                result = p.imap(multi_input, range(sheight, eheight))
+                for cluster_dict in result:
+                    cluster_set = set(cluster_dict.keys())
+                    for i in cluster_dict.keys():
+                        for j in addr_dict.keys():
+                            if len(addr_dict[j] & cluster_dict[i]) > 0:
+                                addr_dict[j] = addr_dict[j].union(cluster_dict[i])
+                                cluster_set = cluster_set - {i}
+                for i in list(cluster_set):
+                    addr_dict[max_cluster_num] = \
+                    addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
+                    max_cluster_num += 1
+            add_db(addr_dict)                                 
+            cdq.commit_transactions()
+
+            etime = time.time()
+            print('height: {}, time:{}'.format(eheight, etime-stime))
+        except KeyboardInterrupt:
+            print('Keyboard Interrupt Detected! Commit transactions...')
+            cdq.commit_transactions()
+                
+        finally:
+            cdq.commit_transactions()
+            cdq.db_close()
 
             
 if __name__=="__main__":

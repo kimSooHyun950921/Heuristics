@@ -49,12 +49,18 @@ def find_addr_from_cluster_num(num):
     
     
 def begin_transactions():
-    cur.execute('BEGIN TRANSACTION;')
+    try:
+        cur.execute('BEGIN TRANSACTION;')
+    except sqlite3.OperationalError as e:
+        print("Error Occur!", e)
 
     
 def commit_transactions():
-    cur.execute('COMMIT;')
-
+    try:
+        cur.execute('COMMIT;')
+        print('commit complete')
+    except sqlite3.OperationalError as e:
+        print("Error Occur!", e)
     
 def get_min_all_cluster(addrss):
     cur.execute(f'''SELECT MIN(number) FROM Cluster WHERE address IN ('{",".join(addrss)}')'''.replace('\'',''))
@@ -91,4 +97,7 @@ def get_all_cluster():
         return addr_dict
     except Exception as e:
         return None
-
+    
+def db_close():
+    conn.close()
+    
