@@ -1,18 +1,19 @@
 import sys
 import time
 import sqlite3
+import numpy as np
 import multiprocessing
 from secret import rpc_user, rpc_password
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_TEST.db'
+db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_TEST3.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
          
 def create_cluster_table():
     cur.execute('''CREATE TABLE IF NOT EXISTS Cluster (
-                     address INTEGER PRIMARY KEY,
+                     address TEXT PRIMARY KEY,
                      number INTEGER NOT NULL);''')
     
     
@@ -31,7 +32,7 @@ def update_cluster_many(addr_list):
     try:
         while index < len(addr_list):
             sample_list = addr_list[index: index+10000]
-            cur.executemany('''UPDATE Cluster SET number = ? WHERE address = ?
+            cur.executemany('''UPDATE Cluster SET number=? WHERE address=?
                             ''', sample_list)
             index += 10000
         return True
@@ -51,12 +52,14 @@ def find_addr_from_cluster_num(num):
 def begin_transactions():
     try:
         cur.execute('BEGIN TRANSACTION;')
+        
     except sqlite3.OperationalError as e:
         print("Error Occur!", e)
 
     
 def commit_transactions():
     try:
+        #conn.commit()
         cur.execute('COMMIT;')
         print('commit complete')
     except sqlite3.OperationalError as e:
@@ -100,4 +103,3 @@ def get_all_cluster():
     
 def db_close():
     conn.close()
-    
