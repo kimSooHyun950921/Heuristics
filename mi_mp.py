@@ -98,7 +98,7 @@ def add_db(c_dict):
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
         if len(cluster_num_list) == 1 and cluster_num_list[0] == -1:
             cluster_num = cdq.get_max_clustered() + 1
-            execute_list = list(zip(addrs, [cluster_num]*len(addrs)))
+            execute_list = list(zip([cluster_num]*len(addrs), addrs))
             cdq.update_cluster_many(execute_list)
         else:
             cluster_num = -1
@@ -111,7 +111,7 @@ def add_db(c_dict):
                     addr = cdq.find_addr_from_cluster_num(num)
                 else:
                     addr = addrs
-                execute_list = list(zip(addr, [cluster_num]*len(addr)))
+                execute_list = list(zip([cluster_num]*len(addr), addr))
                 cdq.update_cluster_many(execute_list)
             
              
@@ -199,13 +199,13 @@ def main():
 
             etime = time.time()
             print('height: {}, time:{}'.format(eheight, etime-stime))
-        except KeyboardInterrupt:
-            print('Keyboard Interrupt Detected! Commit transactions...')
-            cdq.commit_transactions()
+    except KeyboardInterrupt:
+        print('Keyboard Interrupt Detected! Commit transactions...')
+        cdq.commit_transactions()
                 
-        finally:
-            cdq.commit_transactions()
-            cdq.db_close()
+    finally:
+        cdq.commit_transactions()
+        cdq.db_close()
 
             
 if __name__=="__main__":
