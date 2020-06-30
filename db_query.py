@@ -1,13 +1,9 @@
 #DB Query
 import sqlite3
 
-db_index = '/home/dnlabblocksci/BitcoinAnalysis/feature_machine_learning_test/bitcoin_db/index_620000.db'
-db_txhash = '/home/dnlabblocksci/BitcoinAnalysis/feature_machine_learning_test/bitcoin_db/index_620000.db'
+db_index = '/home/dnlab/Jupyter-Bitcoin/index.db'
 index_conn = sqlite3.connect(db_index)
-#txhash_conn = sqlite3.connect(db_txhash)
 tcur = index_conn.cursor()
-#tcur = txhash_conn.cursor()
-
 
 def get_txid(txhash):
     tx_indexes = None
@@ -46,7 +42,12 @@ def get_max():
     tcur.execute('''SELECT MAX(id) FROM TxID ''')
     return tcur.fetchone()[0]
 
-    
+
+def get_addr_max():
+    tcur.execute('''select MAX(id) from AddrID; ''')
+    return tcur.fetchone()[0]
+
+
 def get_addr_many(start, end):
     tcur.execute(f'''SELECT id, -1 FROM TxID WHERE id BETWEEN {start} AND {end} ORDER BY id ASC;''')
     return list(tcur.fetchall())
