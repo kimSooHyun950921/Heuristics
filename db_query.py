@@ -43,12 +43,17 @@ def get_max():
     return tcur.fetchone()[0]
 
 
+def get_max_height():
+    tcur.execute('''SELECT MAX(id) FROM BlkID; ''')
+    return tcur.fetchone()[0]
+
+
 def get_addr_max():
     tcur.execute('''select MAX(id) from AddrID; ''')
     return tcur.fetchone()[0]
 
 
 def get_addr_many(start, end):
-    tcur.execute(f'''SELECT id, -1 FROM TxID WHERE id BETWEEN {start} AND {end} ORDER BY id ASC;''')
+    tcur.execute(f'''SELECT id, -1 FROM AddrID WHERE id BETWEEN {start} AND {end} ORDER BY id ASC;''')
     return list(tcur.fetchall())
     
