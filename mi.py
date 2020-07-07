@@ -63,7 +63,7 @@ def is_mi_cond(in_addrs, out_addrs):
 def find_non_cluster_addr(addrs):
     non_cluster_addr_list = []
     for addr in addrs:
-        cluster_num = cdq.get_cluster_number([addr])
+        cluster_num = cdq.get_cluster_number([addr]).pop()
         if cluster_num == -1:
             non_cluster_addr_list.append(cluster_num)
     return non_cluster_addr_list
@@ -71,6 +71,7 @@ def find_non_cluster_addr(addrs):
     
 def add_db(c_dict):
     '''
+     database에 update 해야함
      1. db에서 주소에 해당하는 값이 모두 동일하다면
          - 클러스터 번호설정 ==> 그대로 냅두면 되는듯
          - 클러스터 번호가 -1 이라면 max값 설정
@@ -166,8 +167,7 @@ def multi_input(height):
                     cls_num = set(cls_num_set).pop() + 1
                     print("[MULTIINPUT DEBUG - cls_num]", cls_num)
                 cluster_dict.update({cls_num:in_addrs})
-            ############################################ 
-            
+            ############################################    
     return cluster_dict
     
     
@@ -187,14 +187,16 @@ def main():
             cluster_dict = multi_input(sheight)
             print("[MAIN DEBUG - cluster_dict]", cluster_dict)
             cluster_set = set(cluster_dict.keys())
+            # 공통이 있는지 찾아 공통주소가 있으면 합치기
             for i in cluster_dict.keys():
                 for j in addr_dict.keys():
                     if len(addr_dict[j] & cluster_dict[i]) > 0:
                         addr_dict[j] = addr_dict[j].union(cluster_dict[i])
                         cluster_set = cluster_set - {i}
             print("[MAIN DEBUG - first addr_dict]", addr_dict)
+            # 공통된것이 없는경우 마지막에 붙여넣기
             if len(list(addr_dict.keys())) > 1:
-                max_cluster_num = sorted(list(addr_dict.keys())).pop()
+                max_cluster_num = sorted(list(addr_dict.keys())).pop()+1
             for i in list(cluster_set):
                 addr_dict[max_cluster_num] = \
                 addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])

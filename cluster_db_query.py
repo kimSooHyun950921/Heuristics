@@ -6,7 +6,7 @@ import multiprocessing
 from secret import rpc_user, rpc_password
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_TEST4.db'
+db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_DEBUG.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
