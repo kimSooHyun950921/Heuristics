@@ -20,7 +20,11 @@ def get_rpc():
 def find_non_cluster_addr(addrs):
     non_cluster_addr_list = []
     for addr in addrs:
-        cluster_num = cdq.get_cluster_number([addr]).pop()
+        cluster_num_set = cdq.get_cluster_number([addr])
+        if len(cluster_num_set) <= 0:
+            print("NoClusterNum!", addr)
+            continue
+        cluster_num = cluster_num_set.pop()
         if cluster_num == -1:
             non_cluster_addr_list.append(cluster_num)
     return non_cluster_addr_list
@@ -75,13 +79,18 @@ def add_db(c_dict):
         print("NO INPUTS!")
         return
     max_cluster_num = cdq.get_max_clustered()
+    print("[ADD_DB DEBUG - max_cluster_num]", max_cluster_num)
+
     for _, addrs in c_dict.items():
+        print("[ADD_DB DEBUG - addrs]",addrs)
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
+        print("[ADD_DB DEBUG - cluster_num_list]", cluster_num_list)
         if len(cluster_num_list) == 1:
             if cluster_num_list[0] == -1:
                 cluster_num = max_cluster_num + 1
                 max_cluster_num = cluster_num
                 execute_list = list(zip([cluster_num]*len(addrs), addrs))
+                print("[ADD_DB DEBUG - first execute_list]", execute_list)
                 cdq.update_cluster_many(execute_list)
         else:
             cluster_num = -1
@@ -89,16 +98,22 @@ def add_db(c_dict):
                 if num != -1:
                     cluster_num = num
                     break
+            print("[ADD_DB DEBUG - cluster_num, cluster_num_list]", cluster_num, cluster_num_list)
             for num in cluster_num_list:
                 if num != cluster_num:
                     if num != -1:
                         addr = cdq.find_addr_from_cluster_num(num)
+                        print("[ADD_DB DEBUG -cluster_num여러개, -1아닌경우addr]", addr)
                     else:
                         addr = find_non_cluster_addr(addrs)
+                        if addr == None:
+                            continue
+                        print("[ADD_DB DEBUG -cluster_num여러개, -1인경우addr]", addr)
                 else:
                     addr = addrs
                     
                 execute_list = list(zip([cluster_num]*len(addr), addr))
+                print("[ADD_DB DEBUG - second execute_list]", execute_list)
                 cdq.update_cluster_many(execute_list)
 
                 
@@ -119,11 +134,16 @@ def multi_input(height):
     cluster_dict = dict()
     txes = rpc_command(height)
     max_cluster_num = 0 
+    mi_addr = set()
+    all_addr = set()
     for tx in txes:
         tx_indexes = dq.get_txid(tx)
         in_addrs = dq.get_addr_txin(tx_indexes)
         out_addrs = dq.get_addr_txout(tx_indexes)
+        
         if is_mi_cond(in_addrs, out_addrs):
+            mi_addr = mi_addr.union(in_addrs)
+            mi_addr = mi_addr.union(out_addrs)
             ##### update cluster dict #################
             '''
             1. cluster_dict의 key와 item을 돌면서
@@ -145,17 +165,18 @@ def multi_input(height):
                     cls_num = set(cls_num_set).pop() + 1
                 cluster_dict.update({cls_num:in_addrs})
             ############################################    
-    return cluster_dict
+    return cluster_dict, mi_addr
     
     
 def main():
-    term = 10000
-    start_height = 0
-    end_height = dq.get_max_height()
+    term = 1#0000
+    start_height = 100
+    end_height = 110000#dq.get_max_height()
     pool_num = multiprocessing.cpu_count()//2  
     print("CLSUTER TABLE MADE")
     time.sleep(5)
-    
+    mi_set = set()
+    all_set = set()
     stime = time.time()
     try:
         for sheight, eheight in zip(range(start_height, end_height, term), \
@@ -169,7 +190,8 @@ def main():
 
             with multiprocessing.Pool(pool_num) as p:
                 result = p.imap(multi_input, range(sheight, eheight))
-                for cluster_dict in result:
+                for cluster_dict, mi_set in result:
+                    mi_set = mi_set.union(mi_set)
                     cluster_set = set(cluster_dict.keys())
                     for i in cluster_dict.keys():
                         for j in addr_dict.keys():
@@ -182,11 +204,11 @@ def main():
                     addr_dict[max_cluster_num] = \
                     addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
                     max_cluster_num += 1
-            add_db(addr_dict)                                 
+                add_db(addr_dict)                                 
             cdq.commit_transactions()
 
             etime = time.time()
-            print('height: {}, time:{}'.format(eheight, etime-stime))
+            print('height: {}, time:{}, mi_addr:{}'.format(eheight, etime-stime, len(mi_set)))
     except KeyboardInterrupt:
         print('Keyboard Interrupt Detected! Commit transactions...')
         cdq.commit_transactions()
