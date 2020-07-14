@@ -26,7 +26,7 @@ def find_non_cluster_addr(addrs):
             continue
         cluster_num = cluster_num_set.pop()
         if cluster_num == -1:
-            non_cluster_addr_list.append(cluster_num)
+            non_cluster_addr_list.append(addr)
     return non_cluster_addr_list
 
 
@@ -39,7 +39,6 @@ def is_mi_cond(in_addrs, out_addrs):
 
                 
 def get_cluster_num(addrs, max_cluster_num):
-    cls_num = -1
     cls_num_set = set(cdq.get_cluster_number(addrs))
     #all same cluster
     if len(cls_num_set) == 1:
@@ -79,18 +78,18 @@ def add_db(c_dict):
         print("NO INPUTS!")
         return
     max_cluster_num = cdq.get_max_clustered()
-    print("[ADD_DB DEBUG - max_cluster_num]", max_cluster_num)
+    #print("[ADD_DB DEBUG - max_cluster_num]", max_cluster_num)
 
     for _, addrs in c_dict.items():
-        print("[ADD_DB DEBUG - addrs]",addrs)
+        #print("[ADD_DB DEBUG - addrs]",addrs)
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
-        print("[ADD_DB DEBUG - cluster_num_list]", cluster_num_list)
+        #print("[ADD_DB DEBUG - cluster_num_list]", cluster_num_list)
         if len(cluster_num_list) == 1:
             if cluster_num_list[0] == -1:
                 cluster_num = max_cluster_num + 1
                 max_cluster_num = cluster_num
                 execute_list = list(zip([cluster_num]*len(addrs), addrs))
-                print("[ADD_DB DEBUG - first execute_list]", execute_list)
+                #print("[ADD_DB DEBUG - first execute_list]", execute_list)
                 cdq.update_cluster_many(execute_list)
         else:
             cluster_num = -1
@@ -98,22 +97,22 @@ def add_db(c_dict):
                 if num != -1:
                     cluster_num = num
                     break
-            print("[ADD_DB DEBUG - cluster_num, cluster_num_list]", cluster_num, cluster_num_list)
+            #print("[ADD_DB DEBUG - cluster_num, cluster_num_list]", cluster_num, cluster_num_list)
             for num in cluster_num_list:
                 if num != cluster_num:
                     if num != -1:
                         addr = cdq.find_addr_from_cluster_num(num)
-                        print("[ADD_DB DEBUG -cluster_num여러개, -1아닌경우addr]", addr)
+                        #print("[ADD_DB DEBUG -cluster_num여러개, -1아닌경우addr]", addr)
                     else:
                         addr = find_non_cluster_addr(addrs)
                         if addr == None:
                             continue
-                        print("[ADD_DB DEBUG -cluster_num여러개, -1인경우addr]", addr)
+                        #print("[ADD_DB DEBUG -cluster_num여러개, -1인경우addr]", addr)
                 else:
                     addr = addrs
                     
                 execute_list = list(zip([cluster_num]*len(addr), addr))
-                print("[ADD_DB DEBUG - second execute_list]", execute_list)
+                #print("[ADD_DB DEBUG - second execute_list]", execute_list)
                 cdq.update_cluster_many(execute_list)
 
                 
@@ -162,16 +161,16 @@ def multi_input(height):
                     cls_num = 0
                 else:
                     cls_num_set = sorted(list(cluster_dict.keys()))
-                    cls_num = set(cls_num_set).pop() + 1
+                    cls_num = cls_num_set[-1] + 1
                 cluster_dict.update({cls_num:in_addrs})
-            ############################################    
+            ############################################
     return cluster_dict, mi_addr
     
     
 def main():
     term = 1#0000
-    start_height = 100
-    end_height = 110000#dq.get_max_height()
+    start_height = 53928#1
+    end_height = 53929#110000#dq.get_max_height()
     pool_num = multiprocessing.cpu_count()//2  
     print("CLSUTER TABLE MADE")
     time.sleep(5)
@@ -192,18 +191,22 @@ def main():
                 result = p.imap(multi_input, range(sheight, eheight))
                 for cluster_dict, mi_set in result:
                     mi_set = mi_set.union(mi_set)
+                    
                     cluster_set = set(cluster_dict.keys())
                     for i in cluster_dict.keys():
                         for j in addr_dict.keys():
                             if len(addr_dict[j] & cluster_dict[i]) > 0:
                                 addr_dict[j] = addr_dict[j].union(cluster_dict[i])
-                                cluster_set = cluster_set - {i}
-                if len(list(addr_dict.keys())) > 1:
-                    max_cluster_num = sorted(list(addr_dict.keys())).pop()+1
-                for i in list(cluster_set):
-                    addr_dict[max_cluster_num] = \
-                    addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
-                    max_cluster_num += 1
+                    if len(list(addr_dict.keys())) > 1:
+                        if len(addr_dict) == 0:
+                            max_cluster_num = 0
+                        else:
+                            max_cluster_num = sorted(list(addr_dict.keys()))[-1]+1
+                    for i in list(cluster_set):
+                        addr_dict[max_cluster_num] = \
+                        addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
+                        max_cluster_num += 1
+                #print(addr_dict)
                 add_db(addr_dict)                                 
             cdq.commit_transactions()
 
