@@ -78,18 +78,14 @@ def add_db(c_dict):
         print("NO INPUTS!")
         return
     max_cluster_num = cdq.get_max_clustered()
-    #print("[ADD_DB DEBUG - max_cluster_num]", max_cluster_num)
 
     for _, addrs in c_dict.items():
-        #print("[ADD_DB DEBUG - addrs]",addrs)
         cluster_num_list = sorted(list(cdq.get_cluster_number(addrs)))
-        #print("[ADD_DB DEBUG - cluster_num_list]", cluster_num_list)
         if len(cluster_num_list) == 1:
             if cluster_num_list[0] == -1:
                 cluster_num = max_cluster_num + 1
                 max_cluster_num = cluster_num
                 execute_list = list(zip([cluster_num]*len(addrs), addrs))
-                #print("[ADD_DB DEBUG - first execute_list]", execute_list)
                 cdq.update_cluster_many(execute_list)
         else:
             cluster_num = -1
@@ -97,31 +93,23 @@ def add_db(c_dict):
                 if num != -1:
                     cluster_num = num
                     break
-            #print("[ADD_DB DEBUG - cluster_num, cluster_num_list]", cluster_num, cluster_num_list)
             for num in cluster_num_list:
                 if num != cluster_num:
                     if num != -1:
                         addr = cdq.find_addr_from_cluster_num(num)
-                        #print("[ADD_DB DEBUG -cluster_num여러개, -1아닌경우addr]", addr)
                         execute_list = list(zip([cluster_num]*len(addr), addr))
-                        #print("[ADD_DB DEBUG - second execute_list]", execute_list)
                         cdq.update_cluster_many(execute_list)
                     else:
                         addr = find_non_cluster_addr(addrs)
                         if addr == None:
                             continue
-                        #print("[ADD_DB DEBUG -cluster_num여러개, -1인경우addr]", addr)
                         execute_list = list(zip([cluster_num]*len(addr), addr))
-                        #print("[ADD_DB DEBUG - second execute_list]", execute_list)
                         cdq.update_cluster_many(execute_list)
                 else:
                     addr = addrs
                     execute_list = list(zip([cluster_num]*len(addr), addr))
-                    #print("[ADD_DB DEBUG - second execute_list]", execute_list)
                     cdq.update_cluster_many(execute_list)
-                    
-
-
+                
                 
 def rpc_command(height):
     while True:
@@ -211,7 +199,6 @@ def main():
                         addr_dict[max_cluster_num] = \
                         addr_dict.get(max_cluster_num, set()).union(cluster_dict[i])
                         max_cluster_num += 1
-                #print(addr_dict)
                 add_db(addr_dict)                                 
             cdq.commit_transactions()
 
