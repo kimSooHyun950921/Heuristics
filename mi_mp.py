@@ -103,17 +103,24 @@ def add_db(c_dict):
                     if num != -1:
                         addr = cdq.find_addr_from_cluster_num(num)
                         #print("[ADD_DB DEBUG -cluster_num여러개, -1아닌경우addr]", addr)
+                        execute_list = list(zip([cluster_num]*len(addr), addr))
+                        #print("[ADD_DB DEBUG - second execute_list]", execute_list)
+                        cdq.update_cluster_many(execute_list)
                     else:
                         addr = find_non_cluster_addr(addrs)
                         if addr == None:
                             continue
                         #print("[ADD_DB DEBUG -cluster_num여러개, -1인경우addr]", addr)
+                        execute_list = list(zip([cluster_num]*len(addr), addr))
+                        #print("[ADD_DB DEBUG - second execute_list]", execute_list)
+                        cdq.update_cluster_many(execute_list)
                 else:
                     addr = addrs
+                    execute_list = list(zip([cluster_num]*len(addr), addr))
+                    #print("[ADD_DB DEBUG - second execute_list]", execute_list)
+                    cdq.update_cluster_many(execute_list)
                     
-                execute_list = list(zip([cluster_num]*len(addr), addr))
-                #print("[ADD_DB DEBUG - second execute_list]", execute_list)
-                cdq.update_cluster_many(execute_list)
+
 
                 
 def rpc_command(height):
@@ -141,8 +148,8 @@ def multi_input(height):
         out_addrs = dq.get_addr_txout(tx_indexes)
         
         if is_mi_cond(in_addrs, out_addrs):
-            mi_addr = mi_addr.union(in_addrs)
-            mi_addr = mi_addr.union(out_addrs)
+            #print(tx, in_addrs)
+
             ##### update cluster dict #################
             '''
             1. cluster_dict의 key와 item을 돌면서
@@ -153,7 +160,7 @@ def multi_input(height):
             need_new_cls_num = True
             for key, addr_set in cluster_dict.items():
                 if len(addr_set & in_addrs) > 0:
-                    cluster_dict[key].union(in_addrs)
+                    cluster_dict[key] = cluster_dict[key].union(in_addrs)
                     need_new_cls_num = False
                     break
             if need_new_cls_num:
@@ -164,13 +171,13 @@ def multi_input(height):
                     cls_num = cls_num_set[-1] + 1
                 cluster_dict.update({cls_num:in_addrs})
             ############################################
-    return cluster_dict, mi_addr
+    return cluster_dict
     
     
 def main():
-    term = 1#0000
-    start_height = 53928#1
-    end_height = 53929#110000#dq.get_max_height()
+    term = 10000
+    start_height = 100000#1
+    end_height =dq.get_max_height()
     pool_num = multiprocessing.cpu_count()//2  
     print("CLSUTER TABLE MADE")
     time.sleep(5)
@@ -189,9 +196,7 @@ def main():
 
             with multiprocessing.Pool(pool_num) as p:
                 result = p.imap(multi_input, range(sheight, eheight))
-                for cluster_dict, mi_set in result:
-                    mi_set = mi_set.union(mi_set)
-                    
+                for cluster_dict in result:
                     cluster_set = set(cluster_dict.keys())
                     for i in cluster_dict.keys():
                         for j in addr_dict.keys():
@@ -211,7 +216,7 @@ def main():
             cdq.commit_transactions()
 
             etime = time.time()
-            print('height: {}, time:{}, mi_addr:{}'.format(eheight, etime-stime, len(mi_set)))
+            print('height: {}, time:{}'.format(eheight, etime-stime))
     except KeyboardInterrupt:
         print('Keyboard Interrupt Detected! Commit transactions...')
         cdq.commit_transactions()
