@@ -16,19 +16,7 @@ timeout = 300
 def get_rpc():
     return AuthServiceProxy(f'http://{rpc_user}:{rpc_password}@{rpc_ip}:{rpc_port}', timeout=timeout)
 
-
-def is_mi_cond(in_addrs, out_addrs):
-    if in_addrs == None or out_addrs == None:
-        return False
-    if len(out_addrs) <=0:
-        return False
-    if len(in_addrs) < 2:
-        return False
-    if len(out_addrs) > 2:
-        return False
-    return True
-    
-    
+       
 def get_min_cluster_num(addr, flag=0):
     ''' DON'T USE
         flag: 0 전체 최소값
@@ -71,18 +59,37 @@ def update_cluster(addrs, cluster_num):
     except Exception as e:
         print(e)
         return False
+
     
+def is_utxo(address):
+    #TODO 
+    return False
+
     
-def is_mi_cond(in_addrs, out_addrs):
-    if in_addrs == None or out_addrs == None:
-        return False
-    if len(out_addrs) <= 0:
-        return False
-    if len(in_addrs) < 2:
-        return False
-    if len(out_addrs) > 2:
-        return False
+def is_power_of_ten(address):
+    #TODO 
     return True
+
+
+def is_otc_cond(in_addrs, out_addrs):
+    payment_address = None
+    if in_addrs == None or out_addrs == None:
+        return None
+    if len(in_addrs) != 2 and len(out_addrs) ==2:
+        for out in out_addrs:
+            if out in in_addrs:
+                continue
+            if not is_utxo(out):
+                continue
+            if is_power_of_ten(out):
+                continue
+            payment_address = out
+        if payment_address == None:
+            return None
+        else:
+            out_addrs.remove(payment_address)
+            return out_addrs
+    return None
 
 
 def add_db(c_dict):
@@ -128,7 +135,7 @@ def rpc_command(height):
     return txes
 
 
-def multi_input(height):
+def one_time_change(height):
     cluster_dict = dict()
     txes = rpc_command(height)
     max_cluster_num = 0 
@@ -137,7 +144,8 @@ def multi_input(height):
         in_addrs = dq.get_addr_txin(tx_indexes)
         out_addrs = dq.get_addr_txout(tx_indexes)
         
-        if is_mi_cond(in_addrs, out_addrs):
+        balance_addr =  is_otc_cond(in_addrs, out_addrs):
+        if balance_addr != None: 
             ##### update cluster dict #################
             '''
             1. cluster_dict의 key와 item을 돌면서
