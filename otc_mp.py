@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import decimal
 import sqlite3
 import multiprocessing
 from secret import rpc_user, rpc_password
@@ -64,9 +65,7 @@ def update_cluster(addrs, cluster_num):
 def is_utxo(address, tx):
     '''
     처음나온 주소인지 아닌지 확인해주는 코드
-    #select distinct min(tx) from TxIn where addr=307960014 ;
     1. 현재 tx와 처음나온주소가 동일하다면 True를 반환 
-    2. 
     '''
     first_tx = cdq.find_tx_first_appeared_address(address)
     if first_tx == tx:
@@ -75,28 +74,41 @@ def is_utxo(address, tx):
 
     
 def is_power_of_ten(address):
-    #TODO 
-    return True
+    '''
+    잔액주소의 판단
+    - 소수점아래 4개이상은 있어야한다.
+    '''
+    value = cdq.find_addr_value(address)
+    num_of_decimal = abs(decimal.Decimal(str(a)).as_tuple().exponent())
+    if num_of_decimal >= 4:
+        return True
+    return False
 
 
 def is_otc_cond(in_addrs, out_addrs, tx):
-    payment_address = None
+    balance_address = None
+    num_of_balance = 0
     if in_addrs == None or out_addrs == None:
         return None
+    
     if len(in_addrs) != 2 and len(out_addrs) ==2:
         for out in out_addrs:
             if out in in_addrs:
                 continue
             if not is_utxo(out, tx):
                 continue
-            if is_power_of_ten(out):
+            if not is_power_of_ten(out):
                 continue
-            payment_address = out
-        if payment_address == None:
+            balance_address = out
+            num_of_balance += 1
+            
+        if balance_address == None:
+            return None
+        elif num_of_balance >= 2:
             return None
         else:
-            out_addrs.remove(payment_address)
-            return out_addrs
+            return balance_address
+        
     return None
 
 
