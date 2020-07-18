@@ -73,12 +73,12 @@ def is_utxo(address, tx):
     return False
 
     
-def is_power_of_ten(address):
+def is_power_of_ten(address, tx):
     '''
     잔액주소의 판단
     - 소수점아래 4개이상은 있어야한다.
     '''
-    value = cdq.find_addr_value(address)
+    value = cdq.find_addr_value(address, tx)
     num_of_decimal = abs(decimal.Decimal(str(a)).as_tuple().exponent())
     if num_of_decimal >= 4:
         return True
@@ -97,7 +97,7 @@ def is_otc_cond(in_addrs, out_addrs, tx):
                 continue
             if not is_utxo(out, tx):
                 continue
-            if not is_power_of_ten(out):
+            if not is_power_of_ten(out, tx):
                 continue
             balance_address = out
             num_of_balance += 1

@@ -130,6 +130,9 @@ def find_tx_first_appeared_address(addr):
     cur.execute(f'''select distinct min(tx) from TxIn where addr={addr}''')
     return cur.fetchone()[0]
 
-
+def find_addr_value(addr, tx):
+    cur.execute(f'''select distinct btc from TxOut where addr={addr} and tx={tx}''')
+    return cur.fetchone()[0]
+    
 def db_close():
     conn.close()
