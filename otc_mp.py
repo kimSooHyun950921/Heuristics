@@ -54,15 +54,23 @@ def update_cluster(addrs, cluster_num):
         cluster_list = list(zip(addrs, cluster_nums))
 
         cdq.insert_cluster_many(cluster_list)
-
+ㅂㅁ               
         return True
     except Exception as e:
         print(e)
         return False
 
     
-def is_utxo(address):
-    #TODO 
+def is_utxo(address, tx):
+    '''
+    처음나온 주소인지 아닌지 확인해주는 코드
+    #select distinct min(tx) from TxIn where addr=307960014 ;
+    1. 현재 tx와 처음나온주소가 동일하다면 True를 반환 
+    2. 
+    '''
+    first_tx = cdq.find_tx_first_appeared_address(address)
+    if first_tx == tx:
+        return True
     return False
 
     
@@ -71,7 +79,7 @@ def is_power_of_ten(address):
     return True
 
 
-def is_otc_cond(in_addrs, out_addrs):
+def is_otc_cond(in_addrs, out_addrs, tx):
     payment_address = None
     if in_addrs == None or out_addrs == None:
         return None
@@ -79,7 +87,7 @@ def is_otc_cond(in_addrs, out_addrs):
         for out in out_addrs:
             if out in in_addrs:
                 continue
-            if not is_utxo(out):
+            if not is_utxo(out, tx):
                 continue
             if is_power_of_ten(out):
                 continue
@@ -144,7 +152,7 @@ def one_time_change(height):
         in_addrs = dq.get_addr_txin(tx_indexes)
         out_addrs = dq.get_addr_txout(tx_indexes)
         
-        balance_addr =  is_otc_cond(in_addrs, out_addrs):
+        balance_addr =  is_otc_cond(in_addrs, out_addrs, tx):
         if balance_addr != None: 
             ##### update cluster dict #################
             '''
@@ -190,7 +198,7 @@ def main():
                 eheight = end_height + 1
 
             with multiprocessing.Pool(pool_num) as p:
-                result = p.imap(multi_input, range(sheight, eheight))
+                result = p.imap(one_time_change, range(sheight, eheight))
                 for cluster_dict in result:
                     cluster_set = set(cluster_dict.keys())
                     for i in cluster_dict.keys():

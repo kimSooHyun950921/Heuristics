@@ -6,7 +6,7 @@ import multiprocessing
 from secret import rpc_user, rpc_password
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_DEBUG.db'
+db_path = '/home/dnlab/Jupyter-Bitcoin/Heuristics/DB/cluster_10_multitest.db'
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
@@ -15,15 +15,26 @@ def create_cluster_table():
     cur.execute('''CREATE TABLE IF NOT EXISTS Cluster (
                      address TEXT PRIMARY KEY,
                      number INTEGER NOT NULL);''')
+def create_debug_table():
+    cur.execute('''CREATE TABLE IF NOT EXISTS Debug (
+                     address TEXT PRIMARY KEY,
+                     number INTEGER NOT NULL);''')
     
     
 def insert_cluster(address, number):
     cur.execute('''INSERT OR IGNORE INTO Cluster (
                        address, number) VALUES (?, ?);
                 ''', (address, number))
+def insert_cluster_debug(address, number):
+    cur.execute('''INSERT OR IGNORE INTO Debug (
+                       address, number) VALUES (?, ?);
+                ''', (address, number))
 
 
 def insert_cluster_many(addr_list):
+    cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES (?, ?)''', addr_list)
+
+def insert_cluster_many_debug(addr_list):
     cur.executemany('''INSERT OR IGNORE INTO Cluster VALUES (?, ?)''', addr_list)
     
     
@@ -33,6 +44,19 @@ def update_cluster_many(addr_list):
         while index < len(addr_list):
             sample_list = addr_list[index: index+10000]
             cur.executemany('''UPDATE Cluster SET number=? WHERE address=?
+                            ''', sample_list)
+            index += 10000
+        return True
+    except sqlite3.Error as error:
+        print(error)
+        return False
+
+def update_cluster_many_debug(addr_list):
+    index = 0
+    try:
+        while index < len(addr_list):
+            sample_list = addr_list[index: index+10000]
+            cur.executemany('''UPDATE Debug SET number=? WHERE address=?
                             ''', sample_list)
             index += 10000
         return True
@@ -100,6 +124,12 @@ def get_all_cluster():
         return addr_dict
     except Exception as e:
         return None
-    
+
+def find_tx_first_appeared_address(addr):
+    #select distinct min(tx) from TxIn where addr=307960014
+    cur.execute(f'''select distinct min(tx) from TxIn where addr={addr}''')
+    return cur.fetchone()[0]
+
+
 def db_close():
     conn.close()
