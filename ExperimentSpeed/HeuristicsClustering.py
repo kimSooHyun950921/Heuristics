@@ -94,6 +94,28 @@ def db_write(stime, cdq, u):
     del u.par
     print(f"CLUSTERING END:{etime - stime}")  
     
+
+def resume():
+    '''
+    지속적인 비트코인 주소를 업데이트하는 함수
+    1. 현재주소와, 최대주소 비교 (Meta Table 만드는것 추천)
+    2. 현재주소와 최대주소가 다르다면, Clustering 시작
+    3. start_height = Metatable.blk.+1
+       end_height = dq.get_max_height()
+    4. index = cur_addr
+    5. uf.UnionFind(max_addr - cur_addr + 1)
+    6. 아래와 유사
+       ** u.union(int(addr_1) - index, int(addr_2) - index) ** ==> 함수 1 union
+          addr_list.append((str(index) + index, u.find(cluster)+index)) ==> 함수 2 Clustering
+          df = pd.DataFrame(addr_list) 
+          for cluster_list groupby 해서 주소리스트를 가져옴: ==> dbwrite
+            - 주소들이 포함된 모든 클러스터 번호를 가져옴
+              만약 클러스터 번호가 없다면 그대로 add
+            - 클러스터 번호가 1개라면 그 번호로 클러스터 add
+            - 만약 클러스터 번호가 여러개라면 가장 작은것으로 add후
+              다른 클러스터가 있는것은 update
+    '''
+    
     
 def main(args):
     
