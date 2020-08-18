@@ -61,6 +61,7 @@ class ClusterDB:
             print(error)
             return False
 
+        
     def update_cluster_many_debug(self, addr_list):
         index = 0
         try:
@@ -132,7 +133,7 @@ class ClusterDB:
             return set(cls_num)
         except sqlite3.DatabaseError as e:
             print("[ERROR]: get_cluster_number", addrss, e)
-
+            
 
     def get_all_cluster(self):
         try:

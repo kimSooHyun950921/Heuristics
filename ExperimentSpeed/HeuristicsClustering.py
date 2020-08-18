@@ -95,7 +95,74 @@ def db_write(stime, cdq, u):
     print(f"CLUSTERING END:{etime - stime}")  
     
 
+def is_resume():
+    cur_address = cdq.get_max_address()
+    max_address = dq.get_max_address()
+    if cur_address == max_address:
+        return False
+    return True
+
+
 def resume():
+    if is_resume():
+        term = 10000
+        start_height = cdq.get_max_height()
+        end_height = dq.gext_max_height()
+        pool_num = multiprocessing.cpu_count()//2
+        s_index = cdq.get_max_address()
+        u = uf.UnionFind(dq.get_max_address() - s_index + 1)
+        try:
+            for sheight, eheight in zip(range(start_height, end_height, term), \
+                                    range(start_height+term, end_height+term, term)):
+                if eheight >= end_height:
+                    eheight = end_height + 1
+
+                with multiprocessing.Pool(pool_num) as p:
+                    result = p.imap(multi_input, range(sheight, eheight))
+                    for addr_list in result:
+                        for addr_set in addr_list:
+                            addr_1 = addr_set[0]
+                            addr_2 = addr_set[1]
+                            u.union(int(addr_1) - s_index, int(addr_2) - s_index)           
+                etime = time.time()
+                print('height: {}, time:{}'.format(eheight, etime-stime))
+            del u.rank
+
+    except KeyboardInterrupt:
+        print('Keyboard Interrupt Detected! Commit transactions...')
+        cdq.commit_transactions()
+        
+    addr_list = []
+    count = 0
+    for index, cluster in enumerate(u.par):
+        addr_list.append((str(index + s_index), u.find(cluster) + s_index))
+        count += 1
+    df = pd.DataFrame(addr_list, columns =['Address', 'ClusterNum'])
+    mi_group = mi_df.groupby('ClusterNum')
+
+    for cluster_number, addr_group in mi_group:
+        if cluster_number != -1:
+            addr_list = list(addr_group.Address)
+            cluster_num_list = list(cdq.get_cluster_number(addr_list))
+            if len(cluster_num_list) <= 1:
+                if cluster_num == -1:
+                    insert_cluster_many(list(zip(addr_list, [cluster_number] * len(addr_list))))
+                else:
+                    insert_cluster_many(list(zip(addr_list, [cluster_num] * len(addr_list))))
+            else:
+                cluster_num_list.sort()
+                cluster_num = cluster_num_list.pop(0)
+                if cluster_num == -1:
+                    cluster_num = cluster_num_list.pop(0)
+                #TODO 만약 같은 주소가 존재한다면 update 그렇지 않다면 insert
+                update_cluster_many(list(zip([cluster_num] * len(addr_list), addr_list)))
+                
+            
+            
+                
+        
+        
+    
     '''
     지속적인 비트코인 주소를 업데이트하는 함수
     1. 현재주소와, 최대주소 비교 (Meta Table 만드는것 추천)
