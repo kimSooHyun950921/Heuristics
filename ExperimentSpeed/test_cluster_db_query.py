@@ -145,6 +145,29 @@ class ClusterDB:
         except Exception as e:
             return None
 
+    def get_tag_from_addr(self, addr_list):
+        try:
+            self.cur.execute(f'''SELECT DISTINCT ClusterName FROM Tag \
+                                 WHERE id IN ('{",".join(addr_list)}')'''.replace('\'',''))
+            
+            addr_list = {ClusterName[0] for ClusterName in self.cur.fetchall()}
+            return addr_list
+        except Exception as e:
+            print("[ERROR]: ", e)
+            return None
+        
+        
+    def get_Category_from_addr(self, addr_list):
+        try:
+            self.cur.execute(f'''SELECT DISTINCT Category FROM Tag \
+                                 WHERE id IN ('{",".join(addr_list)}')'''.replace('\'',''))
+            
+            addr_list = {Category[0] for Category in self.cur.fetchall()}
+            return addr_list
+        except Exception as e:
+            print("[ERROR]: ", e)
+            return None
+        
         
     def db_close(self):
         self.conn.close()

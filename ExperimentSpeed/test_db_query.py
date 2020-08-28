@@ -9,6 +9,79 @@ core_conn = sqlite3.connect(db_core)
 tcur = index_conn.cursor()
 ccur = core_conn.cursor()
 
+def count_all_tx_in(addr_list):
+    i = 0
+    result = 0
+    if len(addr_list) > 10000:
+        print("OVER 10000:", len(addr_list))
+    while len(addr_list) > i:
+        addrs = addr_list[i: i+10000]
+        i = i + 10000
+        try:
+            ccur.execute(f'''select distinct count(TxIn.tx) from TxIn
+                            INNER JOIN TxOut On TxIn.pn = TxOut.n and TxIn.ptx = TxOut.tx
+                            where TxOut.addr in {str(tuple(addrs))};''')
+            temp_result = ccur.fetchall()
+            result += int(temp_result[0][0])
+        except Exception as e:
+            print(e)
+            continue
+    return result
+    
+    
+def count_all_tx_out(addr_list):
+    i = 0
+    result = 0
+    while len(addr_list) > i:
+        addrs = addr_list[i: i+10000]
+        i = i + 10000
+        try:
+            ccur.execute(f'''select distinct count(TxOut.tx) from TxOut
+                             where TxOut.addr in {str(tuple(addrs))};''')
+            temp_result = ccur.fetchall()
+            result += int(temp_result[0][0])
+        except Exception as e:
+            print(e)
+            continue
+    return result
+
+    
+    
+def sum_all_invalue(addr_list):
+    i = 0
+    result = 0
+    while len(addr_list) > i:
+        addrs = addr_list[i: i+10000]
+        i = i + 10000
+        try:
+            ccur.execute(f'''select distinct sum(TxOut.btc) from TxIn
+                            INNER JOIN TxOut On TxIn.pn = TxOut.n and TxIn.ptx = TxOut.tx
+                            where TxOut.addr in {str(tuple(addrs))};''')  
+            temp_result = ccur.fetchall()
+            result += float(temp_result[0][0])
+        except Exception as e:
+            print(e)
+            continue
+    return result
+    
+    
+def sum_all_outvalue(addr_list):
+    i = 0
+    result = 0
+    while len(addr_list) > i:
+        addrs = addr_list[i: i+10000]
+        i = i + 10000
+        try:
+            ccur.execute(f'''select distinct sum(TxOut.btc) from TxOut
+                             where TxOut.addr in {str(tuple(addrs))};''')
+            temp_result = ccur.fetchall()
+            result += float(temp_result[0][0])
+        except Exception as e:
+            print(e)
+            continue
+    return result
+    
+    
 def get_utxo(tx):
     try:
         ccur.execute('''SELECT TxOut.addr AS addr
@@ -53,11 +126,11 @@ def get_txhash_from_txid(txid):
 
 def get_addrid_from_addr(addr):
     try:
-        tcur.execute('''select id from AddrID where addr = "{}";'''.format(addr))
+        tcur.execute('''select id from AddrID where addr = "{}";'''.format(str(addr)))
         tx_hash = tcur.fetchone()
         return int(tx_hash[0])
     except Exception as e:
-        print("[ERROR] error:",e)
+        print("[ERROR] error:",e, addr)
 
 
 def get_txid(txhash):
