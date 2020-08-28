@@ -53,16 +53,27 @@ def update_cluster(addrs, cluster_num):
     try:
         cluster_nums = [cluster_num] * len(addrs)
         cluster_list = list(zip(addrs, cluster_nums))
-
-        cdq.insert_cluster_many(cluster_list)
-ㅂㅁ               
+        cdq.insert_cluster_many(cluster_list)               
         return True
     except Exception as e:
         print(e)
         return False
 
-    
+
 def is_utxo(address, tx):
+    '''
+    utxo인지 아닌지 판단해주는코드
+    1. Output Tx 의 비트코인 주소들이 쓰인 TxIn id가 현재 TxOut id보다 큰것이 없는경우
+    2. retur utxo의 모든 값들 반환한다.
+    '''
+    
+    utxo_list = get_utxo(tx)
+    if utxo_list > 0:
+        return True, utxo_list
+    return False, None
+
+
+def is_first(address, tx):
     '''
     처음나온 주소인지 아닌지 확인해주는 코드
     1. 현재 tx와 처음나온주소가 동일하다면 True를 반환 
@@ -164,7 +175,7 @@ def one_time_change(height):
         in_addrs = dq.get_addr_txin(tx_indexes)
         out_addrs = dq.get_addr_txout(tx_indexes)
         
-        balance_addr =  is_otc_cond(in_addrs, out_addrs, tx):
+        balance_addr =  change_heuristics_cond(in_addrs, out_addrs, tx):
         if balance_addr != None: 
             ##### update cluster dict #################
             '''

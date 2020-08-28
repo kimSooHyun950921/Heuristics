@@ -163,7 +163,7 @@ def multi_input(height):
     
     
 def main():
-    term = 10000
+    term = 3
     start_height = 100000#1
     end_height =dq.get_max_height()
     pool_num = multiprocessing.cpu_count()//2  
