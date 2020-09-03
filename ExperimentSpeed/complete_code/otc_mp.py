@@ -122,7 +122,7 @@ def one_time_change(height):
             is_utxo, utxo_addrs = get_utxo(tx_index)
             if is_utxo:
                 #print("UTXO:", utxo_addrs)
-                otc_addr = is_otc_cond(in_addrs, out_addrs, tx_index)
+                otc_addr = is_otc_cond(in_addrs, utxo_addrs, tx_index)
                 if otc_addr is not None:
                     #print("OTC:", otc_addr)
                     
@@ -141,8 +141,8 @@ def db_write(stime, cdq, u):
             cdq.insert_cluster_many(addr_list)
             cdq.commit_transactions()
             etime = time.time()
-            print(f"COUNT {count} END, TOTAL TIME: {etime - stime},\
-                    {addr_list[len(addr_list)-1]}")
+            #print(f"COUNT {count} END, TOTAL TIME: {etime - stime},\
+            #        {addr_list[len(addr_list)-1]}")
             del addr_list
             addr_list = list()
         count += 1
@@ -152,14 +152,14 @@ def db_write(stime, cdq, u):
         cdq.insert_cluster_many(addr_list)
         cdq.commit_transactions()
         etime = time.time()
-        print(f"COUNT {count} END, TOTAL TIME: {etime - stime},\
-                {addr_list[len(addr_list)-1]}")
+        #print(f"COUNT {count} END, TOTAL TIME: {etime - stime},\
+        #        {addr_list[len(addr_list)-1]}")
         del addr_list
         addr_list = list()
     etime = time.time()
     
     del u.par
-    print(f"CLUSTERING END:{etime - stime}")  
+    #print(f"CLUSTERING END:{etime - stime}")  
     
     
 def main(args):
@@ -184,9 +184,10 @@ def main(args):
                     for addr_set in addr_list:
                         addr_1 = addr_set[0]
                         addr_2 = addr_set[1]
+                        print(addr_1,',',addr_2)
                         u.union(int(addr_1), int(addr_2))           
             etime = time.time()
-            print('height: {}, time:{}'.format(eheight, etime-stime))
+            #print('height: {}, time:{}'.format(eheight, etime-stime))
         del u.rank
         db_write(stime, cdq, u)
 

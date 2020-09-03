@@ -61,7 +61,17 @@ class ClusterDB:
             print(error)
             return False
 
-        
+    
+    def count_cluster_address(self, number):
+        try:
+            self.cur.execute(f'''select distinct count(address) from Cluster
+                                where number = {number};''')
+            return self.cur.fetchone()[0]
+        except Exception as e:
+            print("[ERROR]:",e)
+            return None
+            
+            
     def update_cluster_many_debug(self, addr_list):
         index = 0
         try:
