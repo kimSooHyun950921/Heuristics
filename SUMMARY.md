@@ -18,12 +18,9 @@
 
 ## AnalysisResult
 
-* [Untitled](analysisresult/untitled.md)
+* [Result](analysisresult/untitled.md)
 
 ---
 
-* [System And Scenario](system-and-scenario.md)
-* [Evaluation & Analysis](evaluation-and-analysis.md)
-* [PIL](pil.md)
 * [Reference](reference.md)
 
